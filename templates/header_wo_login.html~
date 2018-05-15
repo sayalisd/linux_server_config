@@ -1,0 +1,14 @@
+<div class="row top-menu">
+	<div class="col-md-12" style="background-color:#0038A8;color:#FFFFFF;">
+		<div class="col-md-10">
+			<h2>Catalog App</h2>
+			</a>
+		</div>
+
+		<div class="col-md-2 text-right">
+			<!--<button type="button" onclick="{{url_for('showLogin')}}">Login</button>-->
+			<!--<a href="{{url_for('showLogin')}}" class="button">Login</a>-->
+			<a href="{{url_for('showCatalog')}}"><strong style="color:#FFFFFF;valign:middle;">Logout</strong></a>
+		</div>
+	</div>
+</div>

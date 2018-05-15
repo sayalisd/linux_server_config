@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+{% block content %}
+{% include "header_wo_login.html" %}
+
+<table align="center">
+<tr>
+<th><strong>{{items.title}} <span style="color:#8B8589"><i>({{category_name}})</i></span></strong></th>
+</tr>
+
+<tr><td>Description: {{items.description}}</td></tr>
+
+<tr><td><a href = "{{url_for('editCategory',categoryitem_name=items.title)}}">Edit</a> | 
+<a href = "{{url_for('deleteCategory',categoryitem_name=items.title)}}">Delete</a> </td></tr>
+</table>
+
+{% endblock %}

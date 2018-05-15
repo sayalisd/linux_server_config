@@ -1,0 +1,37 @@
+{% extends "main.html" %}
+{% block content %}
+{% include "header_wo_login.html" %}
+
+<table align="center">
+<tr><th><span style="color:#0038A8;font-size:15px;">Edit Item</span></tr></th>
+
+<form action="{{ url_for('editCategory', categoryitem_name=categoryitem_name) }}" method="POST">
+	<tr><td>Title</td></tr>
+	<tr><td><input type = 'text' size = '30' name = 'title' placeholder = '{{item.title}}'></td></tr>
+
+	<tr><td></td></tr>
+	<tr><td></td></tr>
+	<tr><td>Description</td></tr>
+	<tr><td><input type = 'text' size = '30' name = 'description' placeholder = '{{item.description}}'></td></tr>
+
+	<tr><td></td></tr>
+	<tr><td></td></tr>	
+	<tr><td>Category</td></tr>
+	<!--<input type = 'text' size = '30' name = 'title' placeholder = '{{item.title}}'> -->
+	<!--<datalist id="category">-->
+	<tr><td><select name = 'category'>
+		{% for i in categories %}
+			<!--<option value='{{i.name}}' %if('{{i.name}}'=='{{category_name}}'):selected%end>{{i.name}}</option>
+			<option value='{{i.name}}' {{"selected=selected" if '{{i.name}}'=='{{category_name}}' }}>{{i.name}}</option>-->>
+			<option value="{{i.name}}"{% if '{{i.name}}'=='{{category_name}}' %} SELECTED{% endif %}>{{i.name}}</option>
+		{% endfor %}
+	</select></td></tr>
+
+	<tr><td></td></tr>
+	<tr><td></td></tr>
+	<tr><td></td></tr>
+	<tr><td><input type = 'submit' value = 'Submit'></td></tr>
+</form>
+</table>
+
+{% endblock %}

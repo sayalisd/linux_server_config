@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+{% block content %}
+{% include "header_wo_login.html" %}
+
+<table align="center">
+<tr><th><span style="color:#0038A8;font-size:15px;">Delete Item</span></tr></th>
+
+<tr><td>Are You Sure You Want to Delete '{{categoryitem_name}}' from '{{catdata.name}}'?</td></tr>
+
+<form action="{{ url_for('deleteCategory',categoryitem_name=categoryitem_name) }}" method="POST">
+	<tr><td><input type = 'submit' value = 'Submit'></td></tr>
+	<tr><td><a href="{{url_for('showSpecificItems', category_name = catdata.name)}}">Cancel</a></td></tr>
+</form>
+</table>
+
+{% endblock %}

@@ -1,0 +1,29 @@
+<html>
+<body>
+
+<a href="{{url_for('showLogin')}}">Click Here to Log in </a>
+
+<!-- Sidebar -->
+<div class="sidebar bar-block" style="width:25%">
+	<h2 class="bar-item">Catalog</h2>
+	{% for i in catalog %}
+		<a href = "{{ url_for('showSpecificItems',category_name=i.name) }}">{{i.name}}</br></a>
+	{% endfor %}
+</div>
+
+<div style="margin-left:25%">
+
+<!-- Page Content -->
+<div class="container">
+	<a href="{{url_for('newItem')}}"> Add Item </a><br>
+	<h3>Latest Items</h3>
+</div>
+
+<div class="container">
+	{% for key, value in data.iteritems() %}
+		<a href = "{{ url_for('catalogItem',category_name=value, categoryitem_name=key) }}"> {{key}} ({{value}})</br></a>
+	{% endfor %}
+</div>
+</div>
+
+</body></html>
