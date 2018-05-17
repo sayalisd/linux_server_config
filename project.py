@@ -1,4 +1,5 @@
-from flask import Flask, render_template, url_for, request, redirect,flash,jsonify, json
+from flask import Flask, render_template, url_for, request
+from flask import redirect, flash, jsonify, json, make_response
 from sqlalchemy import create_engine, asc, func
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Category, CategoryItem, User
@@ -9,27 +10,28 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
 import json
-from flask import make_response
 import requests
 import jsonpickle
-from pprint import pprint
+
 
 engine = create_engine('sqlite:///catalog.db')
-Base.metadata.bind=engine
-DBSession = sessionmaker(bind = engine)
+Base.metadata.bind = engine
+DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
+CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())\
+				['web']['client_id']
 APPLICATION_NAME = "Catalog Application"
 
 app = Flask(__name__)
 
 
-##all functions for login/logout/create user/check user etc
+# all functions for login/logout/create user/check user etc
 @app.route('/login')
 def showLogin():
     state = ''.join(
-        random.choice(string.ascii_uppercase + string.digits) for x in range(32))
+        random.choice(string.ascii_uppercase + string.digits)
+        for x in range(32))
     login_session['state'] = state
     # return "The current session state is %s" % login_session['state']
     return render_template('login.html', STATE=state)
@@ -91,8 +93,8 @@ def gconnect():
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
-        response = make_response(json.dumps('Current user is already connected.'),
-                                 200)
+        response = make_response(json.dumps('Current user is already \
+        				connected.'), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -123,10 +125,12 @@ def gconnect():
     output += '!</h1>'
     output += '<img src="'
     output += login_session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;\
+    -webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
     flash("you are now logged in as %s" % login_session['username'])
     print output
     return output
+
 
 # User Helper Functions
 def createUser(login_session):
@@ -149,6 +153,7 @@ def getUserID(email):
         return user.id
     except:
         return None
+
 
 # DISCONNECT - Revoke a current user's token and reset their login_session
 @app.route('/gdisconnect')
@@ -173,7 +178,6 @@ def gdisconnect():
 
         response = make_response(json.dumps('Successfully disconnected.'), 200)
         response.headers['Content-Type'] = 'application/json'
-        #return response
         return redirect(url_for('showCatalog'))
     else:
         # For whatever reason, the given token was invalid.
@@ -182,67 +186,100 @@ def gdisconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
 
-#Showing json for the catalog : http://localhost:8000/catalog.json
-@app.route('/catalog.json')#'/catalog/<catalog_name>/menu/JSON')
+
+# Showing json for the catalog : http://localhost:8000/catalog.json
+@app.route('/catalog.json')  # '/catalog/<catalog_name>/JSON')
 def catalogJson():
 	test_items = []
 	test_dict = {}
 	category = session.query(Category).all()
 	for cat in category:
 		items = session.query(CategoryItem).filter_by(category_id=cat.id).all()
-		test_items.append([cat.serialize,([i.serialize for i in items])])
-	test_dict["Category"] = test_items
-	return (jsonpickle.encode(test_dict,unpicklable=False, max_depth=5))
+		test_items.append([cat.serialize, ([i.serialize for i in items])])
+		test_dict["Category"] = test_items
+	return (jsonpickle.encode(test_dict, unpicklable=False, max_depth=5))
 
-#Showing all catalog : http://localhost:8000/
+
+# Json for particular category: http://localhost:8000/catalog/Snowboarding/JSON
+@app.route('/catalog/<category_name>/JSON')
+def categoryJson(category_name):
+	cat_data = session.query(Category).filter_by(name=
+				category_name).one()
+	citem_data = session.query(CategoryItem).filter_by(category_id=
+				cat_data.id).all()
+
+	return jsonify(Category=[cat_data.serialize], Items=[i.serialize
+								for i in citem_data])
+
+
+# Json for item: http://localhost:8000/catalog/Snowboarding/Snowboard/JSON
+@app.route('/catalog/<category_name>/<item_name>/JSON')
+def itemJson(category_name, item_name):
+	cat_data = session.query(Category).filter_by(name=category_name).one()
+	citem_data = session.query(CategoryItem).filter_by(title=item_name).one()
+	print citem_data.title
+	return jsonify(Items=[citem_data.serialize])
+
+
+# Showing all catalog : http://localhost:8000/
 @app.route('/')
 @app.route('/catalog/')
 def showCatalog():
-	catalog = session.query(Category).all()#order_by(asc(Category.name))
-	#show latest added items
+	catalog = session.query(Category).all()  # order_by(asc(Category.name))
+	# show latest added items
 	datalist = {}
-	data = session.query(CategoryItem).order_by(CategoryItem.id.desc()).limit(6).all()[::-1]
+	data = session.query(CategoryItem).order_by(CategoryItem.id.desc())\
+					.limit(6).all()[::-1]
 	for d in data:
 		catitemname = d.title
 		catitemid = d.id
 		catid = d.category_id
 		category = session.query(Category).filter_by(id=catid).one()
-		#datalist[catitemid,catitemname] = category.name
+		# datalist[catitemid,catitemname] = category.name
 		datalist[catitemname] = category.name
-	if 'username' not in login_session: #page without 'Add item' option
-		return render_template('publiccatalog.html', catalog=catalog,data=datalist)
+	if 'username' not in login_session:  # page without 'Add item' option
+		return render_template('publiccatalog.html', catalog=catalog, data=datalist)
 	else:
-		return render_template('showcatalog.html',catalog=catalog,data=datalist)
+		return render_template('showcatalog.html', catalog=catalog, data=datalist)
 
-#Showing items for particular category : http://localhost:8000/catalog/Snowboarding/items
+
+# Showing items for category-http://localhost:8000/catalog/Snowboarding/items
 @app.route('/catalog/<category_name>/items')
 def showSpecificItems(category_name):
 	catid = session.query(Category).filter_by(name=category_name).one()
 	citem_data = session.query(CategoryItem).filter_by(category_id=catid.id).all()
 	count = session.query(CategoryItem).filter_by(category_id=catid.id).count()
-	return render_template('showcatitem.html',items=citem_data,category_name=category_name,count=count)
+	return render_template('showcatitem.html', items=citem_data,
+					category_name=category_name, count=count)
 
-#Showing particular item: http://localhost:8000/catalog/Snowboarding/Snowboard
+
+# Showing particular item: http://localhost:8000/catalog/Snowboarding/Snowboard
 @app.route('/catalog/<category_name>/<categoryitem_name>')
-def catalogItem(category_name,categoryitem_name):
+def catalogItem(category_name, categoryitem_name):
 	cat_data = session.query(Category).filter_by(name=category_name).one()
-	citem_data = session.query(CategoryItem).filter_by(title=categoryitem_name).one()
-	if 'username' not in login_session: #page without 'Edit|Delete' option
-		return render_template('publiccatitem.html', items = citem_data, category_name = category_name)
+	citem_data = session.query(CategoryItem).\
+			filter_by(title=categoryitem_name).one()
+	if 'username' not in login_session:  # page without 'Edit|Delete' option
+		return render_template('publiccatitem.html', items=citem_data,
+					category_name=category_name)
 	else:
-		return render_template('showitem.html',items = citem_data, category_name = category_name)
+		return render_template('showitem.html', items=citem_data,
+					category_name=category_name)
 
 
-#Add category item: http://localhost:8000/catalog/new (logged in)
-@app.route('/catalog/new/', methods = ['GET','POST'])
+# Add category item: http://localhost:8000/catalog/new (logged in)
+@app.route('/catalog/new/', methods=['GET', 'POST'])
 def newItem():
 	catalog = session.query(Category).all()
 	if 'username' not in login_session:
 		return redirect('/login')
 	if request.method == 'POST':
-		category_name=request.form['category']
+		category_name = request.form['category']
 		catalog_data = session.query(Category).filter_by(name=category_name).one()
-		newItem = CategoryItem(title=request.form['title'],description=request.form['description'],category_id=catalog_data.id)
+		newItem = CategoryItem(title=request.form['title'],
+							description=request.form['description'],
+							category_id=catalog_data.id,
+							user_id=login_session['user_id'])
 		session.add(newItem)
 		session.commit()
 		flash("New item created")
@@ -250,8 +287,9 @@ def newItem():
 	else:
 		return render_template('newitem.html', categories=catalog)
 
-#Edit catalog item : http://localhost:8000/catalog/Snowboard/edit (logged in)
-@app.route('/catalog/<categoryitem_name>/edit/', methods = ['GET','POST'])
+
+# Edit catalog item : http://localhost:8000/catalog/Snowboard/edit (logged in)
+@app.route('/catalog/<categoryitem_name>/edit/', methods=['GET', 'POST'])
 def editCategory(categoryitem_name):
 	categories = session.query(Category).all()
 	cid = session.query(CategoryItem).filter_by(title=categoryitem_name).one()
@@ -260,6 +298,10 @@ def editCategory(categoryitem_name):
 	categorydata = session.query(Category).filter_by(id=category_id).one()
 	if 'username' not in login_session:
 		return redirect('/login')
+	if editCat.user_id != login_session['user_id']:
+		return "<script>function myFunction() {alert('You are not authorized\
+		to edit this item. Please create your own item in order\
+		to edit.');}</script><body onload='myFunction()''>"
 	if request.method == 'POST':
 		if request.form['title']:
 			editCat.title = request.form['title']
@@ -272,12 +314,16 @@ def editCategory(categoryitem_name):
 		session.add(editCat)
 		session.commit()
 		flash("Catalog item edited")
-		return redirect(url_for('catalogItem', categoryitem_name=categoryitem_name,category_name=catdata.name))
+		return redirect(url_for('catalogItem', categoryitem_name=editCat.title,
+							category_name=catdata.name))
 	else:
-		return render_template('edititem.html', categoryitem_name=categoryitem_name, item = editCat,categories=categories,category_name=categorydata.name)
+		return render_template('edititem.html', categoryitem_name=categoryitem_name,
+						item=editCat, categories=categories,
+						category_name=categorydata.name)
 
-#delete catalog item: http://localhost:8000/catalog/Snowboard/delete (logged in)
-@app.route('/catalog/<categoryitem_name>/delete/', methods = ['GET','POST'])
+
+# delete catalog item: http://localhost:8000/catalog/Snowboard/delete
+@app.route('/catalog/<categoryitem_name>/delete/', methods=['GET', 'POST'])
 def deleteCategory(categoryitem_name):
 	cid = session.query(CategoryItem).filter_by(title=categoryitem_name).one()
 	deleteCat = session.query(CategoryItem).filter_by(id=cid.id).one()
@@ -285,15 +331,22 @@ def deleteCategory(categoryitem_name):
 	categorydata = session.query(Category).filter_by(id=category_id).one()
 	if 'username' not in login_session:
 		return redirect('/login')
+	if deleteCat.user_id != login_session['user_id']:
+		return "<script>function myFunction() {alert('You are not authorized\
+		to delete this item. Please create your own item in order\
+		to delete.');}</script><body onload='myFunction()''>"
 	if request.method == 'POST':
 		session.delete(deleteCat)
 		session.commit()
 		flash("Category item deleted")
-		return redirect(url_for('showSpecificItems', category_name=categorydata.name))
+		return redirect(url_for('showSpecificItems',
+								category_name=categorydata.name))
 	else:
-		return render_template('deleteitem.html', categoryitem_name = categoryitem_name, catdata = categorydata)
+		return render_template('deleteitem.html',
+								categoryitem_name=categoryitem_name,
+								catdata=categorydata)
 
 if __name__ == '__main__':
 	app.secret_key = 'super_secret_key'
 	app.debug = True
-	app.run(host='0.0.0.0',port=8000)
+	app.run(host='0.0.0.0', port=8000)
