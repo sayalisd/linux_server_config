@@ -1,8 +1,6 @@
-# linux server configuration
+IP Address:SSH port - 13.232.88.71:2200
 
-IP Address:SSH port - 35.154.53.233:2200
-
-URL - http://35.154.53.233/
+URL - http://13.232.88.71/
 
 S/ws installed are: modules of python(flask, sqlalchemy, oauth2client, requests, jsonpickle, flask_sqlalchemy)
 
